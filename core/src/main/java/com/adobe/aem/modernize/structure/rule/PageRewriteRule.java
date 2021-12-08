@@ -31,6 +31,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import javax.jcr.ItemExistsException;
 import javax.jcr.Node;
 import javax.jcr.NodeIterator;
 import javax.jcr.Property;
@@ -219,7 +221,13 @@ public class PageRewriteRule implements StructureRewriteRule {
             // Find the source node for this rename
             for (Map.Entry<String, String> nestedEntry : componentRenamed.entrySet()) {
               if (nestedEntry.getValue().equals(relPath)) {
-                session.move(PathUtils.concat(source.getPath(), nestedEntry.getKey()), PathUtils.concat(parent.getPath(), t));
+                try {
+					session.move(PathUtils.concat(source.getPath(), nestedEntry.getKey()), PathUtils.concat(parent.getPath(), t));
+				} catch (ItemExistsException e) {
+					if(!componentRenamed.containsValue(relPath)) {
+						throw new ItemExistsException(e);
+					}
+				}
                 parent = parent.getNode(t);
                 nodeNames.remove(nestedEntry.getKey());
                 break;
